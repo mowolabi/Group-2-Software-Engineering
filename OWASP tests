@@ -1,0 +1,152 @@
+package seleniumTest;
+
+import java.time.Duration;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Proxy;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
+import org.zaproxy.clientapi.core.*;
+import org.testng.Assert;
+import io.github.bonigarcia.wdm.WebDriverManager;
+
+
+public class demo {
+
+	static final String ZAP_PROXY_ADDRESS = "localhost";
+	static final int ZAP_PROXY_PORT = 8080;
+	static final String ZAP_API_KEY = "g02atmtn9m0rhtqrvs14555tds";
+	
+	private WebDriver driver; 
+	private ClientApi api;
+	
+	@BeforeMethod
+	public void setup() {
+		String proxyServerURL = ZAP_PROXY_ADDRESS + ":" + ZAP_PROXY_PORT;
+
+        Proxy proxy = new Proxy();
+        proxy.setHttpProxy(proxyServerURL);
+        proxy.setSslProxy(proxyServerURL);
+
+        ChromeOptions co = new ChromeOptions();
+        co.setAcceptInsecureCerts(true);
+        co.setProxy(proxy);
+        
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver(co);
+        api = new ClientApi(ZAP_PROXY_ADDRESS, ZAP_PROXY_PORT, ZAP_API_KEY);
+	}
+	
+	/*@Test
+	public void test() {
+		driver.get("https://grabdocs.com/");
+		Assert.assertTrue(driver.getTitle().contains("GrabDocs"));		
+	}*/
+	
+	@Test 
+	public void loginTest() {
+		driver.get("https://app.grabdocs.com/login");
+		
+		driver.findElement(By.id("username")).sendKeys("j.owolabi80@gmail.com");
+		driver.findElement(By.id("password")).sendKeys("Apple.222");
+		driver.findElement(By.xpath("//button[@type='submit']")).click();
+		
+		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+		wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("otpCode")));
+		
+		driver.findElement(By.id("otpCode")).sendKeys("335577");	
+		driver.findElement(By.xpath("//button[@type='submit']")).click();
+				
+		Assert.assertTrue(driver.getTitle().contains("GrabDocs"));
+	}
+	
+	@Test
+	public void workspaceTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/workspaces");
+		
+		driver.findElement(By.xpath("//input[@type='text']")).sendKeys("Test");
+		driver.findElement(By.xpath("//button[contains(@disabled class,='bg-blue-500')]")).click();
+		
+		Assert.assertTrue(driver.getTitle().contains("Workspace created successfully"));
+	}
+	
+	@Test
+	public void chathistoryTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/upload");
+		
+		driver.findElement(By.xpath("//button[@title='Show History']")).click();	
+		Assert.assertTrue(driver.getTitle().contains("No chat history yet"));
+	}
+	
+	@Test
+	public void logoutTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/upload");
+		
+		driver.findElement(By.xpath("//button[contains(@class='items-center')]")).click();
+		driver.findElement(By.xpath("//button[contains(@class='items-center')]")).click();
+		Assert.assertTrue(driver.getTitle().contains("GrabDocs"));	
+	}
+	
+	@Test
+	public void feedbackTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/upload");
+		
+		driver.findElement(By.xpath("//button[contains(@class='bg-blue-600')]")).click();
+		driver.findElement(By.xpath("//select[contains(@title='w-full')]")).click();
+		driver.findElement(By.xpath("//option[@value='bug']")).click();
+		
+		driver.findElement(By.xpath("//input[@type='text']")).sendKeys("Test feedback");
+		driver.findElement(By.xpath("//textarea[@rows='4']")).sendKeys("Test feedback message");
+		driver.findElement(By.xpath("//button[@type='submit']")).click();
+		
+		Assert.assertTrue(driver.getTitle().contains("GrabDocs"));		
+	}
+	
+	@Test
+	public void settingsTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/upload");
+		
+		driver.findElement(By.xpath("//button[contains(@class='items-center')]")).click();
+		driver.findElement(By.xpath("//a[contains(@class='items-center')]")).click();
+		
+		driver.findElement(By.xpath("//button[contains(@class='py-4')]")).click();
+		driver.findElement(By.xpath("//button[contains(@class='py-4')]")).click();
+		driver.findElement(By.xpath("//button[contains(@class='py-4')]")).click();
+		
+		Assert.assertTrue(driver.getTitle().contains("GrabDocs"));		
+	}
+	
+	@AfterMethod
+	public void tearDown() {
+		if (api != null){
+			String title = "GrabDocs ZAP Security Test";
+			String template = "traditional-html";
+			String description = "Report from GrabDocs Security Test.";
+			String reportfilename = "grabdocs-zap-report.html";
+			String targetFolder = System.getProperty("user.dir");
+			 
+			try {
+				ApiResponse response = api.reports.generate(title, template, null, description, null, null, null, null, null, reportfilename, null, targetFolder, null);
+				System.out.println("ZAP report generated at this location: "+ response.toString());
+			} catch (ClientApiException e) {
+				e.printStackTrace();
+			}
+			driver.quit();
+		}
+			}
+
+}
+
