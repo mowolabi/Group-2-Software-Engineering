@@ -1,0 +1,165 @@
+package seleniumTest;
+
+import java.sql.Time;
+import java.time.Duration;
+import java.util.concurrent.TimeUnit;
+
+import org.openqa.selenium.By;
+import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.Proxy;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
+import org.zaproxy.clientapi.core.*;
+import org.testng.Assert;
+import io.github.bonigarcia.wdm.WebDriverManager;
+
+
+public class demo {
+
+	static final String ZAP_PROXY_ADDRESS = "localhost";
+	static final int ZAP_PROXY_PORT = 8080;
+	static final String ZAP_API_KEY = "g02atmtn9m0rhtqrvs14555tds";
+	
+	private WebDriver driver; 
+	private ClientApi api;
+	
+	@BeforeMethod
+	public void setup() {
+		String proxyServerURL = ZAP_PROXY_ADDRESS + ":" + ZAP_PROXY_PORT;
+
+        Proxy proxy = new Proxy();
+        proxy.setHttpProxy(proxyServerURL);
+        proxy.setSslProxy(proxyServerURL);
+
+        ChromeOptions co = new ChromeOptions();
+        co.setAcceptInsecureCerts(true);
+        co.setProxy(proxy);
+        
+        WebDriverManager.chromedriver().setup();
+        driver = new ChromeDriver(co);
+        api = new ClientApi(ZAP_PROXY_ADDRESS, ZAP_PROXY_PORT, ZAP_API_KEY);
+	}
+	
+	
+//	login
+//	workspace
+//	chat history
+//	logout
+//	feedback
+//	settings
+	
+	@Test 
+	public void loginTest() {
+		driver.get("https://app.grabdocs.com/login");
+		
+		driver.findElement(By.id("username")).sendKeys("izuchukwu");
+		driver.findElement(By.id("password")).sendKeys("password123");
+		driver.findElement(By.xpath("//button[@type='submit']")).click();
+		
+		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+				
+		wait.until(ExpectedConditions.urlContains("upload"));
+	}
+	
+	//@Test
+	public void workspaceTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/workspaces");
+		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+		wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[contains(@class, 'bg-blue-500')]"))).click();
+
+		driver.findElement(By.xpath("//input[@type='text']")).sendKeys("Test");
+		driver.findElement(By.xpath("//button[contains(@class, 'bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-medium px-4 py-2 text-xs rounded-lg transition-colors flex items-center space-x-2')]")).click();
+		
+		wait.until(ExpectedConditions.urlContains("upload"));
+	}
+	
+	//@Test
+	public void chathistoryTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/upload");
+		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+		wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[@title='Show History']"))).click();
+		
+		wait.until(ExpectedConditions.urlContains("upload"));
+	}
+	
+	//@Test
+	public void logoutTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/upload");
+		
+		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+		wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[contains(@class,'items-center')]"))).click();
+			
+		driver.findElement(By.xpath("//button[contains(@class,'group flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150')]")).click();
+		wait.until(ExpectedConditions.urlContains("login"));
+
+	}
+	
+	//@Test
+	public void feedbackTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/upload");
+		
+		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+		wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//button[contains(@class,'bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-3 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 relative group flex items-center space-x-2')]"))).click();
+		
+		driver.findElement(By.xpath("//select[contains(@class,'w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white')]")).click();
+		driver.findElement(By.xpath("//option[@value='bug']")).click();
+		
+		driver.findElement(By.xpath("//input[@type='text']")).sendKeys("Test feedback");
+		driver.findElement(By.xpath("//textarea[@rows='4']")).sendKeys("Test feedback message");
+		driver.findElement(By.xpath("//button[@type='submit']")).click();
+		
+		wait.until(ExpectedConditions.urlContains("upload"));
+	}
+	
+	//@Test
+	public void settingsTest() {
+		loginTest();
+		driver.get("https://app.grabdocs.com/settings");
+		
+		WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+		wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//span[.='Security']"))).click();
+		
+		//display button and select dark mode
+		driver.findElement(By.xpath("//span[.='Display']")).click();
+		driver.findElement(By.xpath("//option[@value='light']")).click();
+				
+		//Usage menu
+		driver.findElement(By.xpath("//span[.='Usage']")).click();	
+		driver.findElement(By.xpath("//button[@title='Refresh usage data']")).click();
+		
+		wait.until(ExpectedConditions.urlContains("upload"));
+		
+	}
+	
+	@AfterMethod
+	public void tearDown() {
+		if (api != null){
+			String title = "GrabDocs ZAP Security Test";
+			String template = "traditional-html";
+			String description = "Report from GrabDocs Security Test.";
+			String reportfilename = "grabdocs-zap-report.html";
+			String targetFolder = System.getProperty("user.dir");
+			 
+			try {
+				ApiResponse response = api.reports.generate(title, template, null, description, null, null, null, null, null, reportfilename, null, targetFolder, null);
+				System.out.println("ZAP report generated at this location: "+ response.toString());
+			} catch (ClientApiException e) {
+				e.printStackTrace();
+			}
+			driver.quit();
+		}
+			}
+
+}
+
